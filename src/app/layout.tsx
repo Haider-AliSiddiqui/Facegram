@@ -1,45 +1,17 @@
-"use client";
+// app/layout.tsx
+import "@mantine/core/styles.css";
+import Providers from "./provider";
 
-import { Provider } from "react-redux";
-import store from "@/redux/store";
-import { useEffect } from "react";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/lib/firebase";
-import { setCookie } from "cookies-next";
-
-const RootLayout = ({
+export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) => {
-
-  const fetchAuthUser = () => {
-    onAuthStateChanged(auth, async (user) => {
-      // console.log('Auth User Status: ', user);
-      // console.log(user?.uid)
-
-      // const fbToken = await user?.getIdToken();
-      // console.log('Token: ', fbToken);
-
-      // if (user && fbToken) {
-      //   // Saving token...!
-      //   setCookie('token', fbToken);
-      // }
-    });
-  };
-
-  // Mounted hook..!
-  useEffect(() => {
-    fetchAuthUser();
-  }, []);
-
+}) {
   return (
     <html lang="en">
       <body>
-        <Provider store={store}>{children}</Provider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
-};
-
-export default RootLayout;
+}
