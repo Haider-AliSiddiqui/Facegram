@@ -8,6 +8,7 @@ import { AppDispatch } from "@/redux/store";
 import { logInUser } from '@/redux/actions/auth-actions/auth-actions';
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { useRouter } from "next/navigation";
 import { setCookie } from "cookies-next";
 import { LOGIN_USER } from "@/redux/reducers/auth-reducer/auth-reducer";
 
@@ -29,6 +30,7 @@ const LogIn = () => {
             loading: false
         });
     }
+      const router = useRouter();
 
     // Log In Handler...!
     const logInHandler = async () => {
@@ -42,6 +44,10 @@ const LogIn = () => {
             clearAllStates();
         });
     }
+
+    const createAccountHandler = () => {
+    router.push('/signup');
+  }
 
     // Google sign in handler...!
     const googleSignInHandler = async () => {
@@ -101,7 +107,8 @@ const LogIn = () => {
                 />
             </label>
             <br />
-            <button onClick={logInHandler}> Log In </button>
+            <button onClick={logInHandler}> Log In </button> <br />
+            <button onClick={createAccountHandler}> Create new account </button>
 
             <hr />
             <button onClick={googleSignInHandler}> Sign in with Google </button>

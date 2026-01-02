@@ -1,105 +1,155 @@
+// Sign Up...!
+
 "use client";
 
-import {
-  TextInput,
-  PasswordInput,
-  Button,
-  Paper,
-  Title,
-  Stack,
-  Grid,
-  Center,
-} from "@mantine/core";
-import { useForm, isEmail } from "@mantine/form";
+import React, { useState } from "react";
+import { auth } from "@/lib/firebase";
 import { useDispatch } from "react-redux";
 import { signUpUser } from "@/redux/actions/auth-actions/auth-actions";
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { AppDispatch } from "@/redux/store";
-import { useState } from "react";
-import  Lottie  from "lottie-react";
-import loginAnimation from "../../assests/Login.json";
+import { useRouter } from "next/navigation";
+import { setCookie } from "cookies-next";
+import { LOGIN_USER } from "@/redux/reducers/auth-reducer/auth-reducer";
+
+
+const provider = new GoogleAuthProvider()
 
 const SignUp = () => {
-  const dispatch = useDispatch<AppDispatch>();
-  const [loading, setLoading] = useState(false);
+  const [formStates, setFormStates] = useState({
+    name: "",
+    email: "",
+    password: "",
+    loading: false,
+  });
 
-  const form = useForm({
-    initialValues: {
+  const dispatch = useDispatch<AppDispatch>();
+
+  const clearAllStates = () => {
+    setFormStates({
       name: "",
       email: "",
       password: "",
-    },
-    validate: {
-      name: (v) => (v.length < 3 ? "Name too short" : null),
-      email: isEmail("Invalid email"),
-      password: (v) =>
-        v.length < 6 ? "Password must be 6+ characters" : null,
-    },
-  });
-
-  const submitHandler = (values: typeof form.values) => {
-    setLoading(true);
-    dispatch(signUpUser(values)).finally(() => {
-      setLoading(false);
-      form.reset();
+      loading: false,
     });
   };
 
+  const router = useRouter();
+
+  // Sign Up Handler...!
+  const signUpHandler = async() => {
+    setFormStates({ ...formStates, loading: true });
+    const user = {
+      name: formStates.name,
+      email: formStates.email,
+      password: formStates.password,
+    };
+    // console.log("User: ", user);
+    dispatch(signUpUser(user)).finally(() => {
+      clearAllStates();
+    });
+     try {
+     await dispatch(signUpUser(user)); // assume thunk returns promise
+    clearAllStates();
+    router.push("/login");
+  } catch (error: any) {
+    if (error.message.includes("already exists")) {
+      alert("User already exists! Please login.");
+    } else {
+      alert("Signup failed: " + error.message);
+    }
+    setFormStates({ ...formStates, loading: false });
+  }
+    router.push('/login');
+  };
+
+  const haveAccountHandler = () => {
+    router.push('/login');
+  }
+
+  // Google sign in handler...!
+      const googleSignInHandler = async () => {
+          try {
+              const gooleRes = await signInWithPopup(auth, provider);
+              const userDetails = gooleRes?.user;
+              console.log('Google user: ', userDetails);
+  
+              const saveUser = {
+                  email: userDetails?.email,
+                  uid: userDetails?.uid,
+                  name: userDetails?.displayName,
+                  dp: userDetails?.photoURL
+              };
+  
+              const googleToken = await userDetails?.getIdToken();
+              console.log('Google token: ' , googleToken);
+              if (googleToken) {
+                  // Saving token...!
+                  setCookie('token', googleToken);
+  
+                  // Saving auth user in redux...!
+                  dispatch(LOGIN_USER(saveUser));
+  
+                  window.location.reload();
+              }
+          }
+  
+          catch (error) {
+              console.log('Something went wrong while sign un with google: ', error);
+          };
+          router.push('/home');
+      };
+
   return (
-  <Grid h="100vh" align="stretch">
+    <div>
+      <h1> Sign Up </h1>
 
-    {/* ⬅️ LEFT: LOTTIE */}
-    <Grid.Col span={{ base: 0, md: 6 }} visibleFrom="md">
-      <Center style={{ height: "100vh" }}>
-        <Lottie
-          animationData={loginAnimation}
-          loop
-          style={{ width: 350 }}
+      <label htmlFor="username">
+        Name :
+        <input
+        autoFocus
+          type="text"
+          placeholder="Enter Your Name"
+          value={formStates.name}
+          onChange={(e) => {
+            setFormStates({ ...formStates, name: e.target.value });
+          }}
+          id="username"
         />
-      </Center>
-    </Grid.Col>
-
-    {/* ➡️ RIGHT: FORM */}
-    <Grid.Col span={{ base: 12, md: 6 }}>
-      <Center style={{ height: "100vh" }}>
-        <Paper shadow="md" p="xl" radius="md" w={380}>
-          <Title order={2} ta="center" mb="md">
-            Sign Up
-          </Title>
-
-          <form onSubmit={form.onSubmit(submitHandler)}>
-            <Stack>
-              <TextInput
-                label="Name"
-                placeholder="Your name"
-                withAsterisk
-                {...form.getInputProps("name")}
-              />
-
-              <TextInput
-                label="Email"
-                placeholder="your@email.com"
-                withAsterisk
-                {...form.getInputProps("email")}
-              />
-
-              <PasswordInput
-                label="Password"
-                placeholder="••••••"
-                withAsterisk
-                {...form.getInputProps("password")}
-              />
-
-              <Button type="submit" loading={loading} fullWidth>
-                Create Account
-              </Button>
-            </Stack>
-          </form>
-        </Paper>
-      </Center>
-    </Grid.Col>
-
-  </Grid>
-);
+      </label>
+      <br />
+      <label htmlFor="email">
+        Email :
+        <input
+          type="email"
+          placeholder="Enter Your Email"
+          value={formStates.email}
+          onChange={(e) => {
+            setFormStates({ ...formStates, email: e.target.value });
+          }}
+          id="email"
+        />
+      </label>
+      <br />
+      <label htmlFor="password">
+        Password :
+        <input
+          type="password"
+          placeholder="*****"
+          value={formStates.password}
+          onChange={(e) => {
+            setFormStates({ ...formStates, password: e.target.value });
+          }}
+          id="password"
+        />
+      </label>
+      <br />
+      <button onClick={signUpHandler}> Sign Up </button> <br />
+      <button onClick={haveAccountHandler}> Already have an account? </button>
+       <hr />
+            <button onClick={googleSignInHandler}> Sign in with Google </button>
+    </div>
+  );
 };
 
 export default SignUp;
